@@ -8,8 +8,8 @@
 What it does:
 1. uses (or clones) MOSAIC-mfl/mosaic-standard and MOSAIC-mfl/catalog next to the mosaic-skills
    checkout (or the checkouts you name); when they have no local changes, brings them up to date;
-2. puts the catalogue on the branch that holds the landscape profiles (main; the review branch
-   metadata-standard-v0.1 only while main has the old layout);
+2. puts the catalogue on main (the branch that holds the landscape profiles), unless you are on
+   your own branch that has them;
 3. installs the standard's tool for this Python (pip install -e), so the validator runs;
 4. writes the paths to ~/.mosaic/workspace.json for the other scripts;
 5. checks git and the GitHub CLI (gh) for the pull request at the end.
@@ -36,10 +36,8 @@ from _common import CONFIG
 
 STANDARD_REPO = "https://github.com/MOSAIC-mfl/mosaic-standard.git"
 CATALOG_REPO = "https://github.com/MOSAIC-mfl/catalog.git"
-CATALOG_BRANCH_BEFORE_MERGE = "metadata-standard-v0.1"
 WEBSITE_REPO = "https://github.com/MOSAIC-mfl/website.git"
 API_REPO = "https://github.com/MOSAIC-mfl/mosaic-api.git"
-WEBSITE_BRANCH_BEFORE_MERGE = "mosaic-web-api"
 EXPLORER = "frontend/src/features/explorer"
 # The mosaic-skills checkout this script is in (skills/<skill>/scripts/setup.py); the other
 # repositories go next to it.
@@ -81,9 +79,8 @@ def update(path: Path) -> str:
 
 
 def base_branch(path: Path) -> str:
-    """The catalogue branch pull requests go to: main once it has landscapes/, else the review branch."""
-    has = subprocess.run(["git", "-C", str(path), "cat-file", "-e", "origin/main:landscapes"], capture_output=True)
-    return "main" if has.returncode == 0 else CATALOG_BRANCH_BEFORE_MERGE
+    """The catalogue branch pull requests go to."""
+    return "main"
 
 
 def catalog_branch(path: Path, base: str) -> str:
@@ -98,9 +95,8 @@ def catalog_branch(path: Path, base: str) -> str:
 
 
 def website_base(path: Path) -> str:
-    """The website branch pull requests go to: main once it has the map explorer, else the review branch."""
-    has = subprocess.run(["git", "-C", str(path), "cat-file", "-e", f"origin/main:{EXPLORER}"], capture_output=True)
-    return "main" if has.returncode == 0 else WEBSITE_BRANCH_BEFORE_MERGE
+    """The website branch pull requests go to."""
+    return "main"
 
 
 def website_branch(path: Path, base: str) -> str:
