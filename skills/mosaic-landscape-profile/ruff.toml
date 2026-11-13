@@ -1,0 +1,12 @@
+# Lint settings of the skill's scripts (same rules as mosaic-standard).
+line-length = 120
+target-version = "py310"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]
+
+[lint.per-file-ignores]
+"scripts/*.py" = ["S603", "S607", "S310"]  # they run git, gh, npm and the validator, and check https URLs
+"scripts/preview.py" = ["E501"]            # HTML templates read better on one line
+"tests/*.py" = ["S101"]

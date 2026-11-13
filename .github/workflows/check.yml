@@ -1,0 +1,27 @@
+# Lint and test the skills against the MOSAIC standard and catalogue (main of each).
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+      - name: MOSAIC standard and catalogue
+        run: |
+          git clone --quiet --depth 1 https://github.com/MOSAIC-mfl/mosaic-standard.git ../mosaic-standard
+          git clone --quiet --depth 1 https://github.com/MOSAIC-mfl/catalog.git ../catalog
+          pip install -e ../mosaic-standard pytest ruff
+          echo "MOSAIC_CATALOG=$(cd ../catalog && pwd)" >> "$GITHUB_ENV"
+      - run: ruff check skills && ruff format --check skills
+      - run: pytest -q skills/mosaic-landscape-profile/tests
