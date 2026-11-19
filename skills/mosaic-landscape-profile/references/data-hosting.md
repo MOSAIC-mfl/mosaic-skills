@@ -31,12 +31,17 @@ the large ones, with `routes` sending each folder or file to its root:
 data:
   roots:
     site: https://anaguilarar.github.io/mosaic-lake-victoria/data/
-    hf: https://huggingface.co/datasets/aaguilar90/mosaic-lake-victoria/resolve/main/
+    hf: https://huggingface.co/datasets/MOSAIC-CGIAR/mosaic-lake-victoria/resolve/main/
   default_root: hf
   routes:
   - {prefix: vectors/, root: site}
   - {path: tiles/terrain.pmtiles, root: site}
 ```
+
+The team's own places: the Hugging Face organisation **MOSAIC-CGIAR** (one dataset per profile,
+e.g. `MOSAIC-CGIAR/mosaic-lake-victoria`) for large files, and the GitHub repository
+**MOSAIC-mfl/landscape-data** (one folder per landscape code, served on GitHub Pages) for small
+ones, once it holds the files. Ask the team before creating a new dataset or folder.
 
 Change a root with `edit_profile.py set-root --code <CODE> --root <name> --url https://…/`.
 

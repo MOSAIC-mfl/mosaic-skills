@@ -59,7 +59,7 @@ Top level: `title`, `tagline`, `data`, `map`, `groups`, `toggles`, `panels`, `ov
 data:
   roots:                                  # name -> https address ending with '/'
     site: https://anaguilarar.github.io/mosaic-lake-victoria/data/
-    hf: https://huggingface.co/datasets/aaguilar90/mosaic-lake-victoria/resolve/main/
+    hf: https://huggingface.co/datasets/MOSAIC-CGIAR/mosaic-lake-victoria/resolve/main/
   default_root: hf                        # files with no route come from here
   routes:                                 # exceptions, by folder (prefix) or by file (path)
   - prefix: vectors/
