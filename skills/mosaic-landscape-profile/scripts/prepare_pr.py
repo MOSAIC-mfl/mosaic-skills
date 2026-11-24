@@ -22,7 +22,17 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import PROFILE_FILES, add_workspace_args, load_profile, load_yaml, md_table, todos, workspace
+from _common import (
+    PROFILE_FILES,
+    add_workspace_args,
+    load_profile,
+    load_yaml,
+    md_table,
+    standard_cmd,
+    todos,
+    tool_env,
+    workspace,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -123,9 +133,7 @@ def main(argv: list[str] | None = None) -> int:
         lines += [f"- `{f['path']}`: {f.get('problem')}" for f in bad[:15]]
         lines.append("")
     res = subprocess.run(
-        [sys.executable, "-m", "mosaic_catalog", "--catalog", str(ws.catalog), "validate-landscapes", code, "-v"],
-        capture_output=True,
-        text=True,
+        standard_cmd(ws, "validate-landscapes", code, "-v"), capture_output=True, text=True, env=tool_env(ws)
     )
     verdict = next(
         (ln.strip() for ln in res.stdout.splitlines() if f" {code} " in ln and ln.startswith(("OK", "ERR"))), "not run"

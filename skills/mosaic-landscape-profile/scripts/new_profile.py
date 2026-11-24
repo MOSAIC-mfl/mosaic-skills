@@ -26,11 +26,12 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (
+    BLOCKS,
     add_workspace_args,
     camera_for_bbox,
     load_yaml,
     md_table,
-    todos,
+    todos_by_block,
     workspace,
     write_yaml,
 )
@@ -177,11 +178,15 @@ def checklist(dest: Path, code: str, written: list[str], like: str | None) -> st
             "rewrite any text that names the other landscape or its sources, and replace each data location.",
             "",
         ]
-    for name in written:
-        doc = load_yaml(dest / name)
-        items = todos(doc)
-        if items:
-            lines += [f"## {name}", "", *[f"- [ ] `{p}`" for p in items], ""]
+    by_block = todos_by_block(dest)
+    open_blocks = [(key, title) for key, title in BLOCKS if key in by_block]
+    lines += [
+        f"Filled in block by block, with the person: {len(open_blocks)} blocks to go, then the check and preview,"
+        " then the pull request. A value the person does not give stays TODO; nothing is filled in to fill it.",
+        "",
+    ]
+    for n, (key, title) in enumerate(open_blocks, 1):
+        lines += [f"## Block {n} of {len(open_blocks)}: {title}", "", *[f"- [ ] `{p}`" for p in by_block[key]], ""]
     ex_path = dest / "explorer.yaml"
     if ex_path.exists():
         from _common import assets

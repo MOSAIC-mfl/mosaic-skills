@@ -21,7 +21,17 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import PROFILE_FILES, add_workspace_args, assets, load_profile, load_yaml, todos, workspace
+from _common import (
+    PROFILE_FILES,
+    add_workspace_args,
+    assets,
+    load_profile,
+    load_yaml,
+    standard_cmd,
+    todos,
+    tool_env,
+    workspace,
+)
 
 CSS = """
 :root{--ink:#1c2b3a;--muted:#5d6b78;--line:#d9dee3;--bg:#f6f7f8;--card:#fff;--ok:#1f7a4d;--bad:#b3261e;--warn:#9a6700;--accent:#0b5d75}
@@ -81,8 +91,8 @@ def file_list(paths: list[str], checks: dict[str, dict[str, Any]]) -> str:
 
 
 def validator(ws: Any, code: str) -> tuple[str, list[str]]:
-    cmd = [sys.executable, "-m", "mosaic_catalog", "--catalog", str(ws.catalog), "validate-landscapes", code, "-v"]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    cmd = standard_cmd(ws, "validate-landscapes", code, "-v")
+    res = subprocess.run(cmd, capture_output=True, text=True, env=tool_env(ws))
     lines = [ln.strip() for ln in res.stdout.splitlines() if re.match(r"\s*\[(error|warning)\]", ln)]
     head = next(
         (ln for ln in res.stdout.splitlines() if f" {code} " in ln and ln.startswith(("OK", "ERR"))),

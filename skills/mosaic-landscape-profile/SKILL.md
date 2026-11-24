@@ -16,9 +16,13 @@ decides what the page says and shows.
 
 1. **Language.** Talk with the person in their language. Everything written into the repositories
    (YAML texts, comments, commit messages, the pull request) is in **English**.
-2. **Never invent content.** Titles, summaries, story text, study findings, numbers, sources,
-   licences and citations come from the person or from documents they give you. When something is
-   missing, leave the `TODO: …` placeholder and ask. Do not "improve" a finding or a number.
+2. **Never invent content, and never fill a field just to fill it.** Titles, summaries, story
+   text, study findings, numbers, sources, licences, citations and data locations come from the
+   person or from documents they give you. When something is missing, leave the `TODO: …`
+   placeholder and ask. Do not "improve" a finding or a number. Do not copy values from another
+   profile unless the person asks for that value from that profile (then say what you copied). Never
+   copy story chapters or study cards from another landscape: they are about that landscape. A
+   field filled by guesswork is worse than a TODO, because nobody will look for it later.
 3. **Never push to `main`** and never merge, in any repository. Work on a branch
    `landscape/<code>-<short-topic>` and open a pull request; the MOSAIC team reviews it.
 4. **The data stays where it is served.** Profiles only say where each file lives. Never commit
@@ -44,9 +48,37 @@ also the website and mosaic-api) next to the mosaic-skills checkout. Never write
 work files inside mosaic-skills: they go to the catalogue (`landscapes/<CODE>/`) and to
 `<workspace>/work/<CODE>/`.
 
+**Where the commands run.** The scripts, the preview servers and `localhost` must be on the
+person's own computer. If your shell is not that computer (for example a cloud or virtual machine
+that only sees their folder: paths like `/sessions/…` or `~/mnt/…`), a server you start there is not
+reachable at their `localhost`, `npm ci` may fail on the shared folder, and what `setup.py` installs
+stays on your side. Then do the file work (create, edit, validate) where you are, and give the person
+the commands to run in their own terminal for `setup.py --web` and `web_preview.py --serve`, in
+PowerShell form on Windows. The scripts find the checkouts next to mosaic-skills, so they work on the
+person's computer even when `setup.py` was run elsewhere.
+
 Needs: git, Python 3.10+, and the GitHub CLI (`gh`, logged in with `gh auth login`) for the pull
 request; Node.js 22 only for a website change. On Windows use `python`; elsewhere `python3` may be
 the name.
+
+## Block by block (how to work with the person)
+
+Filling in a profile is an interview, not a form you complete on your own:
+
+1. After step 2, tell the person the plan: which blocks their profile needs, out of these, and how
+   many: **the page** (summary, explorer name, credits) · **where the data is served** · **the base
+   map** · **the layers** (one at a time: name and group, file, legend, click, source) · **the story**
+   (chapter by chapter) · **the study cards** (one at a time) · then **check and preview** and **the
+   pull request**. Only the blocks of the pieces they chose (`references/pieces.md`).
+2. Work on one block at a time, and say where you are ("block 3 of 6: the layers"). Ask only that
+   block's questions, a few at a time, and wait for the answers. Do not write the next block while
+   waiting.
+3. Write only what the person answered. What they skip or do not know stays `TODO`; say so.
+4. After each block: run `validate.py --code <CODE> --allow-todo`, then tell the person in plain
+   words what was written, what is still open (validate lists the TODOs by block) and what the next
+   block is. Ask before moving on.
+5. If the person asks for practice or made-up values, confirm it once, use them only for the fields
+   they named, and list them at the end so they can be replaced.
 
 ## Workflow
 
@@ -76,6 +108,10 @@ Ask only what you need, one question at a time. Decide which case it is
 | D | "change the existing profile" (add/remove a layer, move data, fix texts) | `edit_profile.py`, direct edits |
 | E | the landscape code does not exist yet | a request to mosaic-standard first (see recipes) |
 | F | something the page or the map cannot do yet (a kind of layer, a click, a button, a pop-up) | step 5b: a website change, then the profile |
+
+When the person wants a page "like KEN-LVB / PER-PCL" or asks what a profile can have, show them
+the menu in `references/pieces.md` (layers, clicks, base map, switches, panels, story, study cards,
+sources) and ask which pieces they want; then ask, one at a time, only for what those pieces need.
 
 Also find out: the landscape code (`vocab/landscapes.json` in the standard lists the 11 codes), where
 the data files are or will be served, whether there is an existing explorer repository to convert,
@@ -175,6 +211,11 @@ files and their check, story, studies, sources and licences, what is left to fil
 with a map explorer, also run `web_preview.py --serve` and look at the map with the person: it is the
 page as the website will show it. Ask the person to confirm the page reads as they want.
 
+Explain it in plain words: two things start in that one window, the data (the API, port 8001) and
+the page (the website, port 4321) that reads it; the person opens the address it prints and keeps the
+window open. The data is built once: after any edit, run `web_preview.py --code <CODE>` (without
+`--serve`) in another window and reload the page.
+
 ### 8. Pull request
 
 Only when the person agrees.
@@ -213,5 +254,6 @@ Give the person the pull request links and tell them each repository's checks ru
 - `references/errors.md`: validator messages, what they mean and how to fix them.
 - `references/web-modules.md`: when and how to change the website for a profile, and its PR.
 - `references/glossary.md`: the words used here, for explaining to the person.
+- `references/pieces.md`: what a profile can have and what each piece needs from the person.
 - The standard's `docs/landscape-profiles.md` and `schema/landscape/*.schema.json`, and the
   website's `frontend/docs/landscape-profiles.md`, are the source of truth when in doubt.
