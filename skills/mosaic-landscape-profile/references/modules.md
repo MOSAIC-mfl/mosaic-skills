@@ -118,6 +118,8 @@ panels:                          # a side panel with KPIs and a chart of a serie
   date: date
   value: wse
   unit: m
+  decimals: 2                    # differences (vs median)
+  decimals_level: 1              # levels (latest, record); default: decimals
   summary:
   - {stat: latest, label: 'Latest level · {date}'}
   - {stat: vs_median, label: vs median}
@@ -133,8 +135,14 @@ Common fields: `id`, `group`, `title`, `kind`, `swatch` (colour in the rail), `s
 in `sources.yaml`), `before`, `attribution`, `legend`, `inspect` (the click).
 
 **Legend** (`legend`): `kind` `steps` (colours + first/last label), `classes` (one entry per class:
-`name` and `color` or `rgb`, optionally `value`) or `gradient`; `title` (`{year}` becomes the
-selected year), `notes`, `source`.
+`name` and `color` or `rgb`, optionally `value` and `group`) or `gradient`; `title` (`{year}` becomes
+the selected year), `notes`, `source`. With `group`, the legend lists each group's classes under a
+heading (groups in the order they first appear, ungrouped classes last). Take the groups from the
+source's own legend (MapBiomas: its level-1 categories, as PER-PCL land cover does); never invent
+them. Long legends (more than about 10 classes) read better grouped.
+
+The website draws the MOSAIC landscape boundary on every explorer by itself (with its licence's
+credit): a profile does not add it.
 
 #### Overlay kinds (renderers)
 
