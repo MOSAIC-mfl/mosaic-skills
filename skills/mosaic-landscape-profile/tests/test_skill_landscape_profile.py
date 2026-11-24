@@ -204,6 +204,22 @@ def test_set_root_requires_https(blank: tuple[Path, Path]) -> None:
     assert load(cat / "landscapes" / "COL-CUM" / "explorer.yaml")["data"]["roots"]["main"] == "https://x.org/d/"
 
 
+def test_set_root_changes_one_line_only(blank: tuple[Path, Path], capsys: pytest.CaptureFixture[str]) -> None:
+    cat, work = blank
+    new(cat, work, "--code", "COL-CUM", "--template", "explorer")
+    f = cat / "landscapes" / "COL-CUM" / "explorer.yaml"
+    before = f.read_text(encoding="utf-8").splitlines()
+    edit = script("edit_profile")
+    args = ["set-root", "--code", "COL-CUM", "--root", "main", "--url", "https://x.org/d/", *ws_args(cat, work)]
+    assert edit.main(args) == 0
+    after = f.read_text(encoding="utf-8").splitlines()
+    assert len(before) == len(after) and sum(a != b for a, b in zip(before, after, strict=True)) == 1
+    mtime = f.stat().st_mtime_ns
+    capsys.readouterr()
+    assert edit.main(args) == 0  # the same address again: the file is not written
+    assert "nothing changed" in capsys.readouterr().out and f.stat().st_mtime_ns == mtime
+
+
 # --- inventory ---------------------------------------------------------------------------------
 
 
@@ -324,6 +340,12 @@ def test_check_data_reports_cors_ranges_and_missing(blank: tuple[Path, Path], se
     assert "404" in files["vectors/area.geojson"]["problem"]
 
 
+def test_check_data_tells_an_unreachable_host_apart() -> None:
+    # nothing listens on port 9: the host does not answer, which says nothing about the file
+    res = script("check_data").check("https://127.0.0.1:9/d/x.pmtiles", "https://mosaic-mfl.github.io", 3)
+    assert not res["ok"] and res["unreachable"] and "this computer" in res["problem"]
+
+
 def test_check_data_todo_root(blank: tuple[Path, Path]) -> None:
     cat, work = blank
     new(cat, work, "--code", "COL-CUM", "--template", "explorer")
@@ -345,12 +367,17 @@ def test_preview_and_pr(real: tuple[Path, Path], capsys: pytest.CaptureFixture[s
     assert script("preview").main(["--code", "SEN-FK", *ws_args(cat, work)]) == 0
     assert "Still to fill in" in (work / "SEN-FK" / "preview.html").read_text(encoding="utf-8")
     capsys.readouterr()
-    assert script("prepare_pr").main(["--code", "SEN-FK", *ws_args(cat, work)]) == 0
+    # TODOs left: the text is written, but no push commands (the website would show "TODO")
+    assert script("prepare_pr").main(["--code", "SEN-FK", *ws_args(cat, work)]) == 3
     out = capsys.readouterr().out
+    assert "No pull request yet" in out and "gh pr create" not in out
     assert (work / "SEN-FK" / "pr-title.txt").read_text().strip() == "Add the SEN-FK landscape profile"
     body = (work / "SEN-FK" / "pr-body.md").read_text(encoding="utf-8")
     assert "### Map explorer layers" in body and "Checklist for the reviewer" in body
-    assert "gh pr create --base" in out and "git add landscapes/SEN-FK" in out
+    # work in progress on purpose: a draft pull request
+    assert script("prepare_pr").main(["--code", "SEN-FK", "--draft", *ws_args(cat, work)]) == 0
+    out = capsys.readouterr().out
+    assert "gh pr create --draft --base" in out and "git add landscapes/SEN-FK" in out
 
 
 # --- the skill's own files ---------------------------------------------------------------------
@@ -394,5 +421,43 @@ def test_pr_lists_dependencies(blank: tuple[Path, Path]) -> None:
     cat, work = blank
     new(cat, work, "--code", "TUN-NW", "--template", "default")
     url = "https://github.com/MOSAIC-mfl/website/pull/99"
-    assert script("prepare_pr").main(["--code", "TUN-NW", "--depends", url, *ws_args(cat, work)]) == 0
+    assert script("prepare_pr").main(["--code", "TUN-NW", "--depends", url, *ws_args(cat, work)]) == 3  # TODOs left
     assert f"**Depends on:** {url}" in (work / "TUN-NW" / "pr-body.md").read_text(encoding="utf-8")
+
+
+def test_validate_calls_a_todo_draft_a_draft(blank: tuple[Path, Path], capsys: pytest.CaptureFixture[str]) -> None:
+    cat, work = blank
+    new(cat, work, "--code", "TUN-NW", "--template", "default")
+    capsys.readouterr()
+    assert validate(cat, work, "TUN-NW", "--allow-todo") == 0
+    out = capsys.readouterr().out
+    assert "Result: draft" in out and "ready for a pull request" not in out
+
+
+def test_pr_for_a_filled_profile_names_its_branch_after_the_change(
+    blank: tuple[Path, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    cat, work = blank
+    new(cat, work, "--code", "TUN-NW", "--template", "default", "--title", "Northwestern Tunisia", "--summary", "S.")
+    f = cat / "landscapes" / "TUN-NW" / "profile.yaml"
+    f.write_text(yaml.safe_dump(fill_todos(load(f)), sort_keys=False, allow_unicode=True), encoding="utf-8")
+    capsys.readouterr()
+    assert script("prepare_pr").main(["--code", "TUN-NW", "--change", "Fix the summary text", *ws_args(cat, work)]) == 0
+    out = capsys.readouterr().out
+    assert "git switch -c landscape/tun-nw-fix-the-summary-text" in out and "--draft" not in out
+
+
+def test_pr_of_an_edited_converted_profile_names_its_origin(
+    real: tuple[Path, Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    import subprocess
+
+    cat, work = real
+    git = ["git", "-C", str(cat)]
+    subprocess.run([*git, "init", "-q"], check=True)  # noqa: S603
+    subprocess.run([*git, "add", "landscapes"], check=True)  # noqa: S603
+    who = ["-c", "user.name=t", "-c", "user.email=t@example.org"]
+    subprocess.run([*git, *who, "commit", "-q", "-m", "x"], check=True)  # noqa: S603
+    script("prepare_pr").main(["--code", "PER-PCL", "--change", "x", *ws_args(cat, work)])
+    body = (work / "PER-PCL" / "pr-body.md").read_text(encoding="utf-8")
+    assert "**Based on:** https://github.com/anaguilarar/mosaic-ucayali (Andrés Aguilar)" in body

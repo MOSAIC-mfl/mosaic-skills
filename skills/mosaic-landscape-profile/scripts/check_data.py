@@ -56,7 +56,10 @@ def check(url: str, origin: str, timeout: float) -> dict[str, Any]:
             "problem": f"HTTP {err.code}" + (" (file not found)" if err.code == 404 else ""),
         }
     except (urllib.error.URLError, TimeoutError, OSError) as err:
-        return {"ok": False, "problem": f"unreachable ({getattr(err, 'reason', err)})"}
+        # the host could not be reached from this computer (network, proxy, firewall): this says
+        # nothing about the file itself, so it is reported apart from real problems
+        reason = getattr(err, "reason", err)
+        return {"ok": False, "unreachable": True, "problem": f"could not reach the host from this computer ({reason})"}
     cors = headers.get("Access-Control-Allow-Origin")
     size = None
     cr = headers.get("Content-Range")
@@ -118,9 +121,15 @@ def main(argv: list[str] | None = None) -> int:
     bad = [r for r in results if not r["ok"]]
     rows = [["OK" if r["ok"] else "FAIL", r["path"], human(r.get("size")), r.get("problem") or ""] for r in results]
     print(md_table(rows, ["", "file", "size", "problem"]))
+    unreachable = [r for r in bad if r.get("unreachable")]
     print(f"\n{len(results) - len(bad)} of {len(results)} files OK.")
-    if bad:
-        print("How to fix: references/data-hosting.md (where to put the files, CORS, byte ranges).")
+    if unreachable:
+        print(
+            f"{len(unreachable)} could not be checked: their host did not answer from this computer (network, proxy"
+            " or firewall). Try again from another network; this is not a problem of the files."
+        )
+    if len(bad) > len(unreachable):
+        print("How to fix the others: references/data-hosting.md (where to put the files, CORS, byte ranges).")
     out = ws.work_dir(code) / "data-check.json"
     out.write_text(json.dumps({"origin": args.origin, "files": results}, indent=1), encoding="utf-8")
     print(f"Saved: {out}")

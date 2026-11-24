@@ -53,7 +53,7 @@ the name.
 ### 1. Set up (once per computer, then at the start of each session)
 
 ```sh
-python SKILL_DIR/scripts/setup.py                 # clones/updates into ~/mosaic
+python SKILL_DIR/scripts/setup.py                 # clones/updates next to the mosaic-skills folder
 # or, with existing checkouts:
 python SKILL_DIR/scripts/setup.py --standard <path to mosaic-standard> --catalog <path to catalog>
 ```
@@ -72,6 +72,7 @@ Ask only what you need, one question at a time. Decide which case it is
 | A | "the same as KEN-LVB / PER-PCL, for my landscape" | `new_profile.py --like` |
 | B | "like that one, but only these layers / with changes" | `new_profile.py --like … --only …`, then edits |
 | C | "a new page" (with or without a map) | `new_profile.py --template default` or `--template explorer` |
+| C2 | "a page for my landscape", but its data is not online yet | `new_profile.py --template default` (recipes, C2) |
 | D | "change the existing profile" (add/remove a layer, move data, fix texts) | `edit_profile.py`, direct edits |
 | E | the landscape code does not exist yet | a request to mosaic-standard first (see recipes) |
 | F | something the page or the map cannot do yet (a kind of layer, a click, a button, a pop-up) | step 5b: a website change, then the profile |
@@ -99,7 +100,8 @@ python SKILL_DIR/scripts/new_profile.py --code TUN-NW --template default        
 python SKILL_DIR/scripts/new_profile.py --code COL-CUM --template explorer --with-story --with-studies
 ```
 
-The map camera and limits come from the landscape's bounding box. Every value the person must
+The map camera and limits come from the landscape's bounding box. The website draws the landscape's
+MOSAIC boundary on every explorer by itself: never add it as a layer (it would be drawn twice). Every value the person must
 provide is a `TODO: …` placeholder (with the old value as "was: …" when copied), listed in
 `work/<CODE>/checklist.md`. Exit code 3: the code is not a landscape (case E). Exit code 4: the
 folder exists (case D, or `--force` to start again, only if the person agrees).
@@ -158,17 +160,20 @@ python SKILL_DIR/scripts/validate.py --code SEN-FK          # --allow-todo for a
 ```
 
 It runs the same check as the catalogue's pull requests and explains each error (means / fix;
-more in `references/errors.md`). Repeat until it says **ready**.
+more in `references/errors.md`), and lists every TODO left. Repeat until it says **ready for a pull
+request**. With `--allow-todo` it says **draft** instead: valid, but not ready to publish.
 
 ### 7. Preview
 
 ```sh
-python SKILL_DIR/scripts/preview.py --code SEN-FK
+python SKILL_DIR/scripts/preview.py --code SEN-FK                   # a summary page, no map
+python SKILL_DIR/scripts/web_preview.py --code SEN-FK --serve       # the real page with its map (needs setup.py --web once)
 ```
 
-Open `work/<CODE>/preview.html` (or describe it to the person): sections, layers with their legend
-colours, clicks, files and their check, story, studies, sources and licences, what is left to fill
-in. Ask the person to confirm the page reads as they want.
+`preview.py` writes `work/<CODE>/preview.html`: sections, layers with their legend colours, clicks,
+files and their check, story, studies, sources and licences, what is left to fill in. For a profile
+with a map explorer, also run `web_preview.py --serve` and look at the map with the person: it is the
+page as the website will show it. Ask the person to confirm the page reads as they want.
 
 ### 8. Pull request
 
@@ -179,8 +184,13 @@ python SKILL_DIR/scripts/prepare_pr.py --code SEN-FK [--change "one line, for an
 ```
 
 It writes the title and body (`work/<CODE>/pr-title.txt`, `pr-body.md`) and prints the exact
-commands: a new branch `landscape/<code>-…`, a commit of `landscapes/<CODE>/` only, push, and
+commands: a new branch `landscape/<code>-<topic>`, a commit of `landscapes/<CODE>/` only, push, and
 `gh pr create` against the base branch `setup.py` found (`main`). Show the person the commit message and run them.
+
+It prints no commands (exit code 3) while the validator fails or TODO placeholders are left: the
+website would show "TODO". Fill them in, or, if the team should see work in progress, run it with
+`--draft` (a draft pull request). Files whose host did not answer from this computer are reported
+apart, as not checked, not as problems.
 
 - If the push is refused (no write access to `MOSAIC-mfl/catalog`), run
   `gh repo fork --remote=true` (the fork becomes `origin`, MOSAIC becomes `upstream`), push again,
