@@ -39,12 +39,15 @@ decides what the page says and shows.
 
 ## Where things are
 
-The skill lives in the `mosaic-skills` repository, `skills/mosaic-landscape-profile/` (linked into
-`~/.claude/skills/` as its README says). Call that folder `SKILL_DIR`: the folder of
-this SKILL.md, with `scripts/`, `templates/` and `references/` next to it.
+The skill lives in the `mosaic-skills` repository, `skills/mosaic-landscape-profile/`: linked into
+`~/.claude/skills/` (Claude Code) or uploaded to Claude as a ZIP (the Claude app), as its README
+says. Call that folder `SKILL_DIR`: the folder of this SKILL.md, with `scripts/`, `templates/` and
+`references/` next to it.
 
 `setup.py` uses or clones what the work happens in (mosaic-standard and the catalogue; with `--web`
-also the website and mosaic-api) next to the mosaic-skills checkout. Never write profile files or
+also the website and mosaic-api) next to the mosaic-skills checkout; for an uploaded skill, in the
+folder you are working in (in the desktop app, the folder the person connected: ask which one, and
+pass it with `--workspace` if needed). Never write profile files or
 work files inside mosaic-skills: they go to the catalogue (`landscapes/<CODE>/`) and to
 `<workspace>/work/<CODE>/`.
 

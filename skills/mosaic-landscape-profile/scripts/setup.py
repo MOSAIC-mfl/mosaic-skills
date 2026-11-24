@@ -1,6 +1,7 @@
 """Prepare the workspace: the MOSAIC standard and the catalogue, ready to write a landscape profile.
 
     python setup.py                          # mosaic-standard and the catalogue next to mosaic-skills
+                                             # (skill uploaded to Claude: in the current folder)
     python setup.py --workspace D:/Code/Mosaic
     python setup.py --standard D:/Code/Mosaic/mosaic-standard --catalog D:/Code/Mosaic/_publish/catalog
     python setup.py --web                    # also the website and the API, for a profile that needs a new module
@@ -32,16 +33,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import CONFIG
+from _common import CONFIG, default_workspace
 
 STANDARD_REPO = "https://github.com/MOSAIC-mfl/mosaic-standard.git"
 CATALOG_REPO = "https://github.com/MOSAIC-mfl/catalog.git"
 WEBSITE_REPO = "https://github.com/MOSAIC-mfl/website.git"
 API_REPO = "https://github.com/MOSAIC-mfl/mosaic-api.git"
 EXPLORER = "frontend/src/features/explorer"
-# The mosaic-skills checkout this script is in (skills/<skill>/scripts/setup.py); the other
-# repositories go next to it.
-SKILLS_REPO = Path(__file__).resolve().parents[3]
 
 
 def git(repo: Path, *args: str, check: bool = True) -> str:
@@ -159,7 +157,10 @@ def setup_web(ws: Path, args: argparse.Namespace, report: list[str]) -> dict[str
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument(
-        "--workspace", type=Path, default=SKILLS_REPO.parent, help="where to clone (default: next to mosaic-skills)"
+        "--workspace",
+        type=Path,
+        default=default_workspace(),
+        help="where to clone (default: next to mosaic-skills; for a skill uploaded to Claude, the current folder)",
     )
     ap.add_argument("--standard", type=Path, help="an existing checkout of mosaic-standard")
     ap.add_argument("--catalog", type=Path, help="an existing checkout of the catalogue")
