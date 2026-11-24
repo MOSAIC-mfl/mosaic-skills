@@ -187,6 +187,47 @@ def todos(node: Any, path: str = "") -> list[str]:
     return found
 
 
+# The blocks the person fills in, in order (SKILL.md, "Block by block"). Each TODO belongs to one.
+BLOCKS = (
+    ("page", "The page: summary, explorer name and tagline, credits"),
+    ("data", "Where the data files are served"),
+    ("base", "The base map and a click with no layer"),
+    ("layers", "Layers: one at a time, with legend, click and source"),
+    ("story", "The story, chapter by chapter"),
+    ("studies", "Study cards, one at a time"),
+)
+
+
+def block_of(file: str, path: str) -> str:
+    """Which block a TODO placeholder belongs to (file name + its path inside the file)."""
+    top = re.split(r"[.\[]", path, maxsplit=1)[0]
+    if file == "story.yaml":
+        return "story"
+    if file == "studies.yaml":
+        return "studies"
+    if file == "sources.yaml":
+        return "layers"
+    if file == "explorer.yaml":
+        if top in ("title", "tagline", "about"):
+            return "page"
+        if top == "data":
+            return "data"
+        if top in ("map", "click"):
+            return "base"
+        return "layers"  # groups, overlays, toggles, panels
+    return "page"  # profile.yaml
+
+
+def todos_by_block(folder: Path) -> dict[str, list[str]]:
+    """Every TODO left in a profile, grouped by block, in the blocks' order: {block: ['file: path', ...]}."""
+    out: dict[str, list[str]] = {key: [] for key, _ in BLOCKS}
+    for name in PROFILE_FILES:
+        if (folder / name).exists():
+            for p in todos(load_yaml(folder / name)):
+                out[block_of(name, p)].append(f"{name}: {p}")
+    return {k: v for k, v in out.items() if v}
+
+
 def camera_for_bbox(bbox: list[float]) -> dict[str, Any]:
     """Map centre, zoom and limits that frame a landscape's bbox [w, s, e, n] (about 1000 px wide)."""
     w, s, e, n = bbox

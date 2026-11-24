@@ -21,7 +21,17 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import PROFILE_FILES, add_workspace_args, load_yaml, standard_cmd, todos, tool_env, workspace
+from _common import (
+    BLOCKS,
+    PROFILE_FILES,
+    add_workspace_args,
+    load_yaml,
+    standard_cmd,
+    todos,
+    todos_by_block,
+    tool_env,
+    workspace,
+)
 
 # validator message (regex) -> (what it means, how to fix it). Keep in step with references/errors.md.
 EXPLAIN: list[tuple[str, str, str]] = [
@@ -186,9 +196,11 @@ def main(argv: list[str] | None = None) -> int:
     left = {name: todos(load_yaml(folder / name)) for name in PROFILE_FILES if (folder / name).exists()}
     left = {k: v for k, v in left.items() if v}
     if left:
-        print("\nTODO placeholders still to fill in:")
-        for name, paths in left.items():
-            print(f"- {name}: {', '.join(paths)}")
+        titles = dict(BLOCKS)
+        by_block = todos_by_block(folder)
+        print(f"\nTODO placeholders still to fill in, by block ({len(by_block)} of {len(BLOCKS)} blocks open):")
+        for key, items in by_block.items():
+            print(f"- {titles[key]}: {', '.join(items)}")
     n_todo = sum(map(len, left.values()))
     if errors:
         verdict = "not ready (errors)"

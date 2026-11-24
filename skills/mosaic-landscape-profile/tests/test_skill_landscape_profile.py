@@ -497,3 +497,22 @@ def test_setup_warns_about_another_node_version(tmp_path: Path) -> None:
     (tmp_path / ".nvmrc").write_text("99.0.0\n")
     msg = setup.node_check(tmp_path)
     assert ("the website uses 99.0.0" in msg) or msg.startswith("Node.js not found")
+
+
+def test_checklist_and_validate_go_block_by_block(blank: tuple[Path, Path], capsys: pytest.CaptureFixture[str]) -> None:
+    cat, work = blank
+    new(cat, work, "--code", "COL-CUM", "--template", "explorer", "--with-story", "--with-studies")
+    text = (work / "COL-CUM" / "checklist.md").read_text(encoding="utf-8")
+    heads = re.findall(r"^## Block (\d) of (\d): (.*)$", text, flags=re.M)
+    assert [h[2].split(":")[0] for h in heads] == [
+        "The page",
+        "Where the data files are served",
+        "The base map and a click with no layer",
+        "Layers",
+        "The story, chapter by chapter",
+        "Study cards, one at a time",
+    ]
+    assert "`explorer.yaml: data.roots.main`" in text.split("## Block 2")[1].split("## Block 3")[0]
+    capsys.readouterr()
+    validate(cat, work, "COL-CUM", "--allow-todo")
+    assert "by block (6 of 6 blocks open)" in capsys.readouterr().out

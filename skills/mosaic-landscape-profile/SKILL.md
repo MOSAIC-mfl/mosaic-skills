@@ -16,9 +16,13 @@ decides what the page says and shows.
 
 1. **Language.** Talk with the person in their language. Everything written into the repositories
    (YAML texts, comments, commit messages, the pull request) is in **English**.
-2. **Never invent content.** Titles, summaries, story text, study findings, numbers, sources,
-   licences and citations come from the person or from documents they give you. When something is
-   missing, leave the `TODO: …` placeholder and ask. Do not "improve" a finding or a number.
+2. **Never invent content, and never fill a field just to fill it.** Titles, summaries, story
+   text, study findings, numbers, sources, licences, citations and data locations come from the
+   person or from documents they give you. When something is missing, leave the `TODO: …`
+   placeholder and ask. Do not "improve" a finding or a number. Do not copy values from another
+   profile unless the person asks for that value from that profile (then say what you copied). Never
+   copy story chapters or study cards from another landscape: they are about that landscape. A
+   field filled by guesswork is worse than a TODO, because nobody will look for it later.
 3. **Never push to `main`** and never merge, in any repository. Work on a branch
    `landscape/<code>-<short-topic>` and open a pull request; the MOSAIC team reviews it.
 4. **The data stays where it is served.** Profiles only say where each file lives. Never commit
@@ -56,6 +60,25 @@ person's computer even when `setup.py` was run elsewhere.
 Needs: git, Python 3.10+, and the GitHub CLI (`gh`, logged in with `gh auth login`) for the pull
 request; Node.js 22 only for a website change. On Windows use `python`; elsewhere `python3` may be
 the name.
+
+## Block by block (how to work with the person)
+
+Filling in a profile is an interview, not a form you complete on your own:
+
+1. After step 2, tell the person the plan: which blocks their profile needs, out of these, and how
+   many: **the page** (summary, explorer name, credits) · **where the data is served** · **the base
+   map** · **the layers** (one at a time: name and group, file, legend, click, source) · **the story**
+   (chapter by chapter) · **the study cards** (one at a time) · then **check and preview** and **the
+   pull request**. Only the blocks of the pieces they chose (`references/pieces.md`).
+2. Work on one block at a time, and say where you are ("block 3 of 6: the layers"). Ask only that
+   block's questions, a few at a time, and wait for the answers. Do not write the next block while
+   waiting.
+3. Write only what the person answered. What they skip or do not know stays `TODO`; say so.
+4. After each block: run `validate.py --code <CODE> --allow-todo`, then tell the person in plain
+   words what was written, what is still open (validate lists the TODOs by block) and what the next
+   block is. Ask before moving on.
+5. If the person asks for practice or made-up values, confirm it once, use them only for the fields
+   they named, and list them at the end so they can be replaced.
 
 ## Workflow
 
