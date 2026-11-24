@@ -189,12 +189,17 @@ def main(argv: list[str] | None = None) -> int:
         print("\nTODO placeholders still to fill in:")
         for name, paths in left.items():
             print(f"- {name}: {', '.join(paths)}")
+    n_todo = sum(map(len, left.values()))
+    if errors:
+        verdict = "not ready (errors)"
+    elif left:
+        verdict = "draft: valid, but TODO placeholders are left" if args.allow_todo else "not ready (TODO left)"
+    else:
+        verdict = "ready for a pull request"
+    print(f"\nResult: {verdict} ({len(errors)} errors, {len(warnings)} warnings, {n_todo} TODO)")
+    if left and args.allow_todo and not errors:
+        print("A pull request needs every TODO filled in (or prepare_pr.py --draft for work in progress).")
     ok = not errors and (args.allow_todo or not left)
-    print(
-        "\nResult: "
-        + ("ready" if ok else "not ready")
-        + f" ({len(errors)} errors, {len(warnings)} warnings, {sum(map(len, left.values()))} TODO)"
-    )
     return 0 if ok else 1
 
 

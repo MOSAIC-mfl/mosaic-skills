@@ -95,6 +95,14 @@ labels-start, adm2-hit, …, osm-city, osm-country`. `labels-start` is an empty 
 something "before: labels-start" to keep it under the place names. `new_profile.py --like` keeps the
 base map of the copied profile: its boundary, mask and imagery files must be replaced.
 
+**Where a base map comes from.** The template (`--template explorer`) has only a grey background:
+the base map is data like any layer, served with the profile's files. KEN-LVB and PER-PCL use three
+PMTiles cut to the explorer's area: place names and roads from the Protomaps daily OpenStreetMap
+build (`pmtiles extract https://build.protomaps.com/<YYYYMMDD>.pmtiles osm_basemap.pmtiles
+--bbox=<w,s,e,n>`; credit "© OpenStreetMap contributors"), Sentinel-2 imagery and terrain (see their
+`sources.yaml`). Copy the `sources` and `layers` of the base map from one of them, change the files,
+and check the credits. Do not add the landscape boundary: the website draws it on every explorer.
+
 ### `groups`, `toggles`, `panels`: the side list (rail)
 
 ```yaml

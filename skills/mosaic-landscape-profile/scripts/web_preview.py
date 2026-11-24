@@ -105,11 +105,17 @@ def main(argv: list[str] | None = None) -> int:
         f" (full screen: http://localhost:4321/website/landscapes/{code.lower()}/map/)"
     )
     if not args.serve:
-        print("\nTo start it (two terminals, or run them in the background):")
+        print("\nEasiest: run this script again with --serve. Or start it by hand, in separate terminals.")
+        print("macOS / Linux:")
         print(f'  PORT={API_PORT} node "{serve}" "{site}"')
         if args.data:
             print(f'  PORT={DATA_PORT} node "{serve}" "{args.data}"')
         print(f'  cd "{front}" && ' + " ".join(f"{k}={v}" for k, v in web_env.items()) + " npm run dev")
+        print("Windows (PowerShell):")
+        print(f'  $env:PORT="{API_PORT}"; node "{serve}" "{site}"')
+        if args.data:
+            print(f'  $env:PORT="{DATA_PORT}"; node "{serve}" "{args.data}"')
+        print(f'  cd "{front}"; ' + "; ".join(f'$env:{k}="{v}"' for k, v in web_env.items()) + "; npm run dev")
         print(f"Then open {page}")
         return 0
     node, npm = shutil.which("node"), shutil.which("npm")
@@ -119,7 +125,10 @@ def main(argv: list[str] | None = None) -> int:
     procs = [subprocess.Popen([node, str(serve), str(site)], env={**os.environ, "PORT": str(API_PORT)})]
     if args.data:
         procs.append(subprocess.Popen([node, str(serve), str(args.data)], env={**os.environ, "PORT": str(DATA_PORT)}))
-    procs.append(subprocess.Popen([npm, "run", "dev"], cwd=front, env={**os.environ, **web_env}))
+    # Astro sends its dev server to the background when an AI agent starts it (as Claude Code does):
+    # this script would then think the site stopped and shut the API down. Keep it in the foreground.
+    dev_env = {**os.environ, **web_env, "ASTRO_DEV_BACKGROUND": "0"}
+    procs.append(subprocess.Popen([npm, "run", "dev"], cwd=front, env=dev_env))
     print(f"\nOpen {page}  (Ctrl+C stops everything)")
     try:
         procs[-1].wait()

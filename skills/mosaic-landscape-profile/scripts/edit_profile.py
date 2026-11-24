@@ -16,6 +16,7 @@ checks them. The first comment lines of each file are kept.
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -179,8 +180,17 @@ def cmd_set_root(folder: Path, root: str, url: str) -> int:
     ex = load_yaml(paths["explorer"])
     roots = ex["data"].setdefault("roots", {})
     old = roots.get(root)
-    roots[root] = url
-    write(paths["explorer"], ex)
+    if old == url:
+        print(f"data.roots.{root} is already {url}: nothing changed.")
+        return 0
+    # change only that line, so the rest of the file keeps its layout (a full rewrite would reflow it)
+    text = paths["explorer"].read_text(encoding="utf-8")
+    line = re.compile(rf"^(\s+){re.escape(root)}:\s*['\"]?{re.escape(str(old))}['\"]?\s*$", re.M) if old else None
+    if line and len(line.findall(text)) == 1:
+        paths["explorer"].write_text(line.sub(lambda m: f"{m.group(1)}{root}: {url}", text), encoding="utf-8")
+    else:
+        roots[root] = url
+        write(paths["explorer"], ex)
     print(f"data.roots.{root}: {old or '(new)'} -> {url}\nNext: check_data.py, then validate.py")
     return 0
 

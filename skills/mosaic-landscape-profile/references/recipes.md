@@ -45,6 +45,26 @@ With a map explorer:
 3. If the person has an explorer repository, `inventory.py --source <repo> --code COL-CUM` first:
    it suggests module and click for each layer.
 
+## C2. A new landscape whose data is not online yet
+
+"I want a page for Central India, but the layers are not hosted anywhere yet."
+
+A map explorer needs at least one real layer served online (HTTPS, CORS, byte ranges): the
+validator and the website need files to read. Until then:
+
+1. Start with a page without a map: `new_profile.py --code IND-CH --template default --title "…"
+   --summary "…"` (title and summary from the person). The landscape page shows the catalogue's
+   sections; the website already draws the landscape's location and boundary.
+2. Agree where the files will be served (`references/data-hosting.md`): small files in
+   `MOSAIC-mfl/landscape-data` (one folder per landscape code), large ones in the Hugging Face
+   organisation `MOSAIC-CGIAR`. Ask the MOSAIC team before creating a folder or a dataset.
+3. When the first layers are online, add the map: `new_profile.py --code IND-CH --template explorer
+   --force` (only if the person agrees to replace the page), then recipe C "with a map explorer".
+   The base map (imagery, terrain, place names) is part of the data too: see `modules.md`, base map.
+
+Do not open a pull request with placeholder layers or a `TODO` data root: `prepare_pr.py` refuses
+it. A draft pull request (`--draft`) is fine when the team should see the work in progress.
+
 ## D. Change an existing profile
 
 - Remove a layer: `edit_profile.py remove-overlay --code KEN-LVB --id fire` (also its story
@@ -55,7 +75,7 @@ With a map explorer:
 - Pull request: `prepare_pr.py --code KEN-LVB --change "remove the fire layer"`.
 
 Changes to KEN-LVB and PER-PCL alter pages converted from Andrés Aguilar's explorers: mention it in
-the pull request.
+the pull request (`prepare_pr.py` adds a "Based on" line from the profile's `origin` and `credits`).
 
 ## E. A landscape that is not in the standard yet
 
