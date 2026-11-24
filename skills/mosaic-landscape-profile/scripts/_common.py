@@ -32,6 +32,16 @@ import yaml
 CONFIG = Path(os.environ.get("MOSAIC_WORKSPACE_FILE", Path.home() / ".mosaic" / "workspace.json"))
 # the mosaic-skills checkout (skills/<skill>/scripts/_common.py): the other repositories sit next to it
 SKILLS_REPO = Path(__file__).resolve().parents[3]
+
+
+def default_workspace() -> Path:
+    """Where the MOSAIC checkouts go: next to the mosaic-skills checkout; when the skill was uploaded to
+    Claude (no checkout around it), the folder Claude is working in."""
+    if (SKILLS_REPO / ".git").exists() or (SKILLS_REPO / "skills" / "mosaic-landscape-profile").is_dir():
+        return SKILLS_REPO.parent
+    return Path.cwd()
+
+
 PROFILE_FILES = ("profile.yaml", "explorer.yaml", "story.yaml", "studies.yaml", "sources.yaml")
 TODO = "TODO"
 
@@ -67,8 +77,15 @@ def add_workspace_args(ap: ArgumentParser) -> None:
     ap.add_argument("--work", type=Path, help="folder for the files made for you (default: <workspace>/work)")
 
 
-def discover(folder: Path = SKILLS_REPO.parent) -> dict[str, str]:
-    """The checkouts next to the mosaic-skills folder, where setup.py puts them."""
+def discover(folder: Path | None = None) -> dict[str, str]:
+    """The checkouts where setup.py puts them: next to mosaic-skills, or in the folder Claude works in
+    (or its parent) when the skill was uploaded to Claude."""
+    if folder is None:
+        for candidate in dict.fromkeys([default_workspace(), Path.cwd(), Path.cwd().parent]):
+            found = discover(candidate)
+            if "standard" in found and "catalog" in found:
+                return found
+        return {}
     found: dict[str, str] = {}
     marks = {
         "standard": ("mosaic-standard", "schema/landscape"),

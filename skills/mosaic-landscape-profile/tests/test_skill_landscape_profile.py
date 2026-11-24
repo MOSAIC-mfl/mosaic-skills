@@ -516,3 +516,15 @@ def test_checklist_and_validate_go_block_by_block(blank: tuple[Path, Path], caps
     capsys.readouterr()
     validate(cat, work, "COL-CUM", "--allow-todo")
     assert "by block (6 of 6 blocks open)" in capsys.readouterr().out
+
+
+def test_an_uploaded_skill_works_in_the_current_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uploaded to Claude, the skill has no mosaic-skills checkout around it: it uses the folder Claude works in."""
+    common = script("_common")
+    monkeypatch.setattr(common, "SKILLS_REPO", tmp_path / "synced-skills")
+    (tmp_path / "work" / "catalog" / "records").mkdir(parents=True)
+    (tmp_path / "work" / "mosaic-standard").symlink_to(STANDARD, target_is_directory=True)
+    monkeypatch.chdir(tmp_path / "work")
+    assert common.default_workspace() == tmp_path / "work"
+    found = common.discover()
+    assert found["catalog"] == str(tmp_path / "work" / "catalog")
