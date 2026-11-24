@@ -44,6 +44,15 @@ also the website and mosaic-api) next to the mosaic-skills checkout. Never write
 work files inside mosaic-skills: they go to the catalogue (`landscapes/<CODE>/`) and to
 `<workspace>/work/<CODE>/`.
 
+**Where the commands run.** The scripts, the preview servers and `localhost` must be on the
+person's own computer. If your shell is not that computer (for example a cloud or virtual machine
+that only sees their folder: paths like `/sessions/…` or `~/mnt/…`), a server you start there is not
+reachable at their `localhost`, `npm ci` may fail on the shared folder, and what `setup.py` installs
+stays on your side. Then do the file work (create, edit, validate) where you are, and give the person
+the commands to run in their own terminal for `setup.py --web` and `web_preview.py --serve`, in
+PowerShell form on Windows. The scripts find the checkouts next to mosaic-skills, so they work on the
+person's computer even when `setup.py` was run elsewhere.
+
 Needs: git, Python 3.10+, and the GitHub CLI (`gh`, logged in with `gh auth login`) for the pull
 request; Node.js 22 only for a website change. On Windows use `python`; elsewhere `python3` may be
 the name.
@@ -76,6 +85,10 @@ Ask only what you need, one question at a time. Decide which case it is
 | D | "change the existing profile" (add/remove a layer, move data, fix texts) | `edit_profile.py`, direct edits |
 | E | the landscape code does not exist yet | a request to mosaic-standard first (see recipes) |
 | F | something the page or the map cannot do yet (a kind of layer, a click, a button, a pop-up) | step 5b: a website change, then the profile |
+
+When the person wants a page "like KEN-LVB / PER-PCL" or asks what a profile can have, show them
+the menu in `references/pieces.md` (layers, clicks, base map, switches, panels, story, study cards,
+sources) and ask which pieces they want; then ask, one at a time, only for what those pieces need.
 
 Also find out: the landscape code (`vocab/landscapes.json` in the standard lists the 11 codes), where
 the data files are or will be served, whether there is an existing explorer repository to convert,
@@ -175,6 +188,11 @@ files and their check, story, studies, sources and licences, what is left to fil
 with a map explorer, also run `web_preview.py --serve` and look at the map with the person: it is the
 page as the website will show it. Ask the person to confirm the page reads as they want.
 
+Explain it in plain words: two things start in that one window, the data (the API, port 8001) and
+the page (the website, port 4321) that reads it; the person opens the address it prints and keeps the
+window open. The data is built once: after any edit, run `web_preview.py --code <CODE>` (without
+`--serve`) in another window and reload the page.
+
 ### 8. Pull request
 
 Only when the person agrees.
@@ -213,5 +231,6 @@ Give the person the pull request links and tell them each repository's checks ru
 - `references/errors.md`: validator messages, what they mean and how to fix them.
 - `references/web-modules.md`: when and how to change the website for a profile, and its PR.
 - `references/glossary.md`: the words used here, for explaining to the person.
+- `references/pieces.md`: what a profile can have and what each piece needs from the person.
 - The standard's `docs/landscape-profiles.md` and `schema/landscape/*.schema.json`, and the
   website's `frontend/docs/landscape-profiles.md`, are the source of truth when in doubt.

@@ -7,8 +7,12 @@ The scripts work on two checkouts:
 - the MOSAIC catalogue (MOSAIC-mfl/catalog): ``records/`` and ``landscapes/<CODE>/``.
 
 ``setup.py`` writes their paths to ``~/.mosaic/workspace.json``; every script reads it, and
-``--standard`` / ``--catalog`` override it. Files the scripts produce for the person (inventory,
-data check, preview, pull request text) go to ``<workspace>/work/<CODE>/``, never into the repos.
+``--standard`` / ``--catalog`` override it. Without that file (or when its paths are not on this
+computer, e.g. it was written in a virtual machine), the scripts look for the checkouts next to the
+mosaic-skills folder. The standard's tool always runs from that checkout (its ``src/`` first on the
+Python path), so an older ``mosaic_catalog`` installed in Python cannot get in the way. Files the
+scripts produce for the person (inventory, data check, preview, pull request text) go to
+``<workspace>/work/<CODE>/``, never into the repos.
 """
 
 from __future__ import annotations
@@ -26,6 +30,8 @@ from urllib.parse import quote
 import yaml
 
 CONFIG = Path(os.environ.get("MOSAIC_WORKSPACE_FILE", Path.home() / ".mosaic" / "workspace.json"))
+# the mosaic-skills checkout (skills/<skill>/scripts/_common.py): the other repositories sit next to it
+SKILLS_REPO = Path(__file__).resolve().parents[3]
 PROFILE_FILES = ("profile.yaml", "explorer.yaml", "story.yaml", "studies.yaml", "sources.yaml")
 TODO = "TODO"
 
@@ -61,14 +67,40 @@ def add_workspace_args(ap: ArgumentParser) -> None:
     ap.add_argument("--work", type=Path, help="folder for the files made for you (default: <workspace>/work)")
 
 
+def discover(folder: Path = SKILLS_REPO.parent) -> dict[str, str]:
+    """The checkouts next to the mosaic-skills folder, where setup.py puts them."""
+    found: dict[str, str] = {}
+    marks = {
+        "standard": ("mosaic-standard", "schema/landscape"),
+        "catalog": ("catalog", "records"),
+        "website": ("website", "frontend"),
+        "api": ("mosaic-api", "src/mosaic_api"),
+    }
+    for key, (name, mark) in marks.items():
+        if (folder / name / mark).exists():
+            found[key] = str(folder / name)
+    return found
+
+
+def _usable(saved: dict[str, str]) -> bool:
+    return all(saved.get(k) and Path(saved[k]).is_dir() for k in ("standard", "catalog"))
+
+
 def workspace(args: Namespace) -> Workspace:
     saved: dict[str, str] = {}
     if CONFIG.exists():
         saved = json.loads(CONFIG.read_text(encoding="utf-8"))
+    if not _usable(saved):  # no setup.py on this computer, or its paths are elsewhere (a virtual machine)
+        found = discover()
+        if args.standard or args.catalog:  # paths given by hand: do not mix in other checkouts
+            found = {k: v for k, v in found.items() if k in ("standard", "catalog")}
+        saved = {**found, **({"base": saved["base"]} if saved.get("base") else {})}
     standard = args.standard or (Path(saved["standard"]) if saved.get("standard") else None)
     catalog = args.catalog or (Path(saved["catalog"]) if saved.get("catalog") else None)
     if not standard or not catalog:
-        sys.exit("No workspace yet: run scripts/setup.py first (or pass --standard and --catalog).")
+        sys.exit(
+            "No workspace yet: run scripts/setup.py first, on this same computer (or pass --standard and --catalog)."
+        )
     work = args.work or Path(saved.get("work") or (Path(catalog).resolve().parent / "work"))
     ws = Workspace(
         Path(standard).resolve(),
@@ -76,14 +108,32 @@ def workspace(args: Namespace) -> Workspace:
         Path(work).resolve(),
         saved.get("base") or "main",
     )
-    if saved.get("website"):
+    if saved.get("website") and saved.get("api"):
         ws.website, ws.api = Path(saved["website"]), Path(saved["api"])
         ws.website_base = saved.get("website_base", ws.website_base)
     if not (ws.catalog / "records").is_dir():
         sys.exit(f"{ws.catalog} is not a catalogue checkout (no records/ folder).")
     if not (ws.standard / "schema" / "landscape").is_dir():
         sys.exit(f"{ws.standard} is not a mosaic-standard checkout (no schema/landscape/ folder).")
+    src = str(ws.standard / "src")
+    if src not in sys.path:  # this process imports the workspace's standard too (dump_yaml)
+        sys.path.insert(0, src)
     return ws
+
+
+def tool_env(ws: Workspace) -> dict[str, str]:
+    """Environment for the standard's tool (and mosaic-api): their own source first on the Python path,
+    so whatever older version is installed in Python is not the one that runs."""
+    paths = [str(ws.standard / "src")]
+    if ws.api:
+        paths.append(str(ws.api / "src"))
+    old = os.environ.get("PYTHONPATH")
+    return {**os.environ, "PYTHONPATH": os.pathsep.join([*paths, *([old] if old else [])])}
+
+
+def standard_cmd(ws: Workspace, *args: str) -> list[str]:
+    """``python -m mosaic_catalog --catalog <catalogue> <args>``, to run with ``env=tool_env(ws)``."""
+    return [sys.executable, "-m", "mosaic_catalog", "--catalog", str(ws.catalog), *args]
 
 
 def load_yaml(path: Path) -> Any:

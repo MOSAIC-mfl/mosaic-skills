@@ -461,3 +461,39 @@ def test_pr_of_an_edited_converted_profile_names_its_origin(
     script("prepare_pr").main(["--code", "PER-PCL", "--change", "x", *ws_args(cat, work)])
     body = (work / "PER-PCL" / "pr-body.md").read_text(encoding="utf-8")
     assert "**Based on:** https://github.com/anaguilarar/mosaic-ucayali (Andrés Aguilar)" in body
+
+
+# --- workspace on another computer ---------------------------------------------------------------
+
+
+def test_scripts_find_the_checkouts_next_to_mosaic_skills(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No workspace.json on this computer (setup.py ran in a virtual machine): the siblings are found."""
+    common = script("_common")
+    root = tmp_path / "side"
+    (root / "catalog" / "records").mkdir(parents=True)
+    (root / "mosaic-standard").symlink_to(STANDARD, target_is_directory=True)
+    original = common.discover
+    monkeypatch.setattr(common, "discover", lambda folder=root: original(folder))
+    (tmp_path / "workspace.json").write_text(json.dumps({"standard": "/nowhere/s", "catalog": "/nowhere/c"}))
+    from argparse import Namespace
+
+    ws = common.workspace(Namespace(standard=None, catalog=None, work=None))
+    assert ws.catalog == (root / "catalog").resolve() and ws.standard == STANDARD.resolve()
+
+
+def test_the_standard_tool_runs_from_the_workspace_checkout(blank: tuple[Path, Path]) -> None:
+    common = script("_common")
+    cat, work = blank
+    from argparse import Namespace
+
+    ws = common.workspace(Namespace(standard=STANDARD, catalog=cat, work=work))
+    env = common.tool_env(ws)
+    assert env["PYTHONPATH"].split(os.pathsep)[0] == str(STANDARD.resolve() / "src")
+    assert common.standard_cmd(ws, "build")[-3:] == ["--catalog", str(cat.resolve()), "build"]
+
+
+def test_setup_warns_about_another_node_version(tmp_path: Path) -> None:
+    setup = script("setup")
+    (tmp_path / ".nvmrc").write_text("99.0.0\n")
+    msg = setup.node_check(tmp_path)
+    assert ("the website uses 99.0.0" in msg) or msg.startswith("Node.js not found")

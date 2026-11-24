@@ -1,7 +1,7 @@
 """Run the website locally with the profile as it is now (and any website change you are making).
 
-    python web_preview.py --code SEN-FK                  # build, then print the commands to start it
     python web_preview.py --code SEN-FK --serve          # build and start it (Ctrl+C to stop)
+    python web_preview.py --code SEN-FK                  # after an edit: rebuild; then reload the page
     python web_preview.py --code SEN-FK --serve --data D:/data/profiles   # explorer data from a local folder
 
 Needs setup.py --web. Steps (the same chain as the published site, all local):
@@ -13,6 +13,11 @@ Needs setup.py --web. Steps (the same chain as the published site, all local):
    the pages are http://localhost:4321/website/landscapes#<CODE>/map (the explorer's Map
    visualization) and http://localhost:4321/website/landscapes/<code>/map/ (full screen).
 
+Two things run, and --serve starts both in one window: the data (the API, on :8001) and the page
+(the website, on :4321), which reads the data. The data is built once: after editing the profile, run
+this script again without --serve in another window and reload the page (the running API serves the
+new files at once).
+
 With --data, the explorer reads its files from <folder>/<CODE>/ (served on :8002) instead of the
 profile's data roots: useful before the data is online. Files marked withheld are never requested.
 """
@@ -22,12 +27,13 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import socket
 import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import add_workspace_args, workspace
+from _common import add_workspace_args, standard_cmd, tool_env, workspace
 
 API_PORT = 8001
 DATA_PORT = 8002
@@ -63,6 +69,12 @@ def run(cmd: list[str], what: str, **kw: object) -> bool:
     return True
 
 
+def listening(port: int) -> bool:
+    with socket.socket() as sock:
+        sock.settimeout(0.3)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--code", required=True)
@@ -84,11 +96,13 @@ def main(argv: list[str] | None = None) -> int:
         API_CONFIG.format(dist=dist.as_posix(), state=state.as_posix(), site=site.as_posix()), encoding="utf-8"
     )
     py = sys.executable
-    if not run(
-        [py, "-m", "mosaic_catalog", "--catalog", str(ws.catalog), "build", "--out", str(dist)], "catalogue build"
-    ):
+    env = {**tool_env(ws), "MOSAIC_API_CONFIG": str(cfg)}
+    deps = subprocess.run([py, "-c", "import fastapi, httpx, yaml, jsonschema"], capture_output=True, env=env)
+    if deps.returncode != 0:
+        print(f"The API's Python packages are missing for {py}: run setup.py --web on this computer first.")
+        return 2
+    if not run(standard_cmd(ws, "build", "--out", str(dist)), "catalogue build", env=env):
         return 1
-    env = {**os.environ, "MOSAIC_API_CONFIG": str(cfg)}
     if not run([py, "-m", "mosaic_api", "harvest"], "API harvest", env=env, cwd=ws.api):
         return 1
     if not run([py, "-m", "mosaic_api", "export"], "API export", env=env, cwd=ws.api):
@@ -104,6 +118,9 @@ def main(argv: list[str] | None = None) -> int:
         f"http://localhost:4321/website/landscapes#{code}/map"
         f" (full screen: http://localhost:4321/website/landscapes/{code.lower()}/map/)"
     )
+    if not args.serve and listening(API_PORT):
+        print(f"\nThe preview is already running: reload {page}")
+        return 0
     if not args.serve:
         print("\nEasiest: run this script again with --serve. Or start it by hand, in separate terminals.")
         print("macOS / Linux:")
@@ -122,6 +139,12 @@ def main(argv: list[str] | None = None) -> int:
     if not node or not npm:
         print("Node.js is not installed (https://nodejs.org/).")
         return 2
+    if not (front / "node_modules").is_dir():
+        print(f"The website's packages are not installed: run setup.py --web (or npm ci in {front}).")
+        return 2
+    if listening(API_PORT) or listening(4321):
+        print(f"Port {API_PORT} or 4321 is already in use: a preview is probably running. Reload {page}, or stop it.")
+        return 2
     procs = [subprocess.Popen([node, str(serve), str(site)], env={**os.environ, "PORT": str(API_PORT)})]
     if args.data:
         procs.append(subprocess.Popen([node, str(serve), str(args.data)], env={**os.environ, "PORT": str(DATA_PORT)}))
@@ -129,7 +152,12 @@ def main(argv: list[str] | None = None) -> int:
     # this script would then think the site stopped and shut the API down. Keep it in the foreground.
     dev_env = {**os.environ, **web_env, "ASTRO_DEV_BACKGROUND": "0"}
     procs.append(subprocess.Popen([npm, "run", "dev"], cwd=front, env=dev_env))
-    print(f"\nOpen {page}  (Ctrl+C stops everything)")
+    print(
+        f"\nStarting the data (API, http://127.0.0.1:{API_PORT}) and the page (website, http://localhost:4321)."
+        f"\nOpen {page}"
+        f"\nKeep this window open; Ctrl+C stops both. After you edit the profile, run in another window:"
+        f"\n  python web_preview.py --code {code}\nand reload the page."
+    )
     try:
         procs[-1].wait()
     except KeyboardInterrupt:

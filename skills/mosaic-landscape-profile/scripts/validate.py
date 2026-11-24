@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from _common import PROFILE_FILES, add_workspace_args, load_yaml, todos, workspace
+from _common import PROFILE_FILES, add_workspace_args, load_yaml, standard_cmd, todos, tool_env, workspace
 
 # validator message (regex) -> (what it means, how to fix it). Keep in step with references/errors.md.
 EXPLAIN: list[tuple[str, str, str]] = [
@@ -160,8 +160,8 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     ws = workspace(args)
     code = args.code.upper()
-    cmd = [sys.executable, "-m", "mosaic_catalog", "--catalog", str(ws.catalog), "validate-landscapes", code, "-v"]
-    res = subprocess.run(cmd, capture_output=True, text=True)
+    cmd = standard_cmd(ws, "validate-landscapes", code, "-v")
+    res = subprocess.run(cmd, capture_output=True, text=True, env=tool_env(ws))
     if res.returncode not in (0, 1):
         print(f"The validator did not run ({' '.join(cmd)}):\n{res.stderr[-1500:] or res.stdout[-1500:]}")
         print("Run scripts/setup.py again (it installs the validator).")

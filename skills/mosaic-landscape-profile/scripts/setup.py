@@ -109,6 +109,21 @@ def website_branch(path: Path, base: str) -> str:
     return base
 
 
+def node_check(website: Path) -> str:
+    """The website names its Node.js version in .nvmrc; another major version may build differently."""
+    want = (website / ".nvmrc").read_text(encoding="utf-8").strip() if (website / ".nvmrc").exists() else ""
+    node = shutil.which("node")
+    if not node:
+        return f"Node.js not found: install {want or '22'} (https://nodejs.org/) to preview the website"
+    have = subprocess.run([node, "--version"], capture_output=True, text=True).stdout.strip().lstrip("v")
+    if want and have.split(".")[0] != want.split(".")[0]:
+        return (
+            f"Node.js {have} found; the website uses {want}. It may work, but if npm ci or the preview fails,"
+            f" install Node {want.split('.')[0]} (nvm-windows / nvm, or nodejs.org)"
+        )
+    return f"Node.js {have} (the website uses {want or 'Node 22'})"
+
+
 def setup_web(ws: Path, args: argparse.Namespace, report: list[str]) -> dict[str, str]:
     website = (args.website or ws / "website").expanduser().resolve()
     api = (args.api or ws / "mosaic-api").expanduser().resolve()
@@ -122,6 +137,7 @@ def setup_web(ws: Path, args: argparse.Namespace, report: list[str]) -> dict[str
         )
         report.append("API installed" if res.returncode == 0 else f"API install failed: {res.stderr.strip()[-300:]}")
         npm = shutil.which("npm")
+        report.append(node_check(website))
         if (website / "frontend" / "node_modules").is_dir():
             report.append("website dependencies already installed (node_modules kept)")
         elif not npm:
