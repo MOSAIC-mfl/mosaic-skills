@@ -24,4 +24,4 @@ jobs:
           pip install -e ../mosaic-standard pytest ruff
           echo "MOSAIC_CATALOG=$(cd ../catalog && pwd)" >> "$GITHUB_ENV"
       - run: ruff check skills && ruff format --check skills
-      - run: pytest -q skills/mosaic-landscape-profile/tests
+      - run: pytest -q skills/mosaic-landscape-profile/tests skills/mosaic-contribute/tests
