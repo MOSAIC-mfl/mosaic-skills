@@ -5,6 +5,7 @@ work in the Claude app (desktop or claude.ai) and in Claude Code.
 
 | Skill | What it does |
 |---|---|
+| [`mosaic-contribute`](skills/mosaic-contribute/) | Add a folder of datasets in any format to the catalogue with no Excel and no GitHub form: a script reads the files, Claude asks only what the files cannot say (who made the data, the licence, where to get it, a short description), checks the records and sends them as one pull request to MOSAIC-mfl/catalog, or as a zip for the MOSAIC team. Python 3.8+ only; also works with other AI assistants and by hand (see its README) |
 | [`mosaic-landscape-profile`](skills/mosaic-landscape-profile/) | Create or change a landscape profile (the map, story and studies a living landscape shows under "Map visualization") without programming, check it, preview it and open the pull request to MOSAIC-mfl/catalog; when the profile needs something the website cannot draw yet, also the website change |
 
 ## Use it in the Claude app (desktop or claude.ai)
@@ -83,6 +84,8 @@ Write in your own words and language; Claude asks for whatever is missing, one b
   chapter."* → chapter by chapter: text, layer, chart, and where each number comes from.
 - *"I have my own explorer in a GitHub repository; turn it into a MOSAIC profile."* → reads it
   without changing it and suggests how each layer maps to the website.
+- *"Add the datasets in D:\Data\Ucayali to MOSAIC."* (`mosaic-contribute`) → lists what each file
+  holds, asks one round of questions, and sends the records once you agree.
 
 ## Remove it
 
@@ -99,6 +102,7 @@ How the pieces of MOSAIC fit together, and a demo of the skill: MOSAIC-mfl/mosai
 pip install pyyaml pytest ruff
 ruff check skills && ruff format --check skills
 pytest -q skills/mosaic-landscape-profile/tests     # needs ../mosaic-standard (or MOSAIC_STANDARD); MOSAIC_CATALOG for the catalogue tests
+pytest -q skills/mosaic-contribute/tests            # standalone; with mosaic-standard installed it also runs the MOSAIC validator
 ```
 
 Everything written to MOSAIC repositories is in English; the person using a skill can talk to Claude

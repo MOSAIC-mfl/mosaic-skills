@@ -1,0 +1,11 @@
+# Lint settings of the skill's scripts. Target Python 3.8: the scripts must run on any computer.
+line-length = 120
+target-version = "py38"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003", "UP006", "UP007", "UP035", "UP045", "SIM108", "E501"]  # typing kept readable for 3.8
+
+[lint.per-file-ignores]
+"scripts/*.py" = ["S603", "S607", "S310", "S110", "S112", "BLE001"]  # they run git, gh and curl; readers never stop a scan
+"tests/*.py" = ["S101", "S608"]
